@@ -5,11 +5,13 @@ Tiniest working initramfs generator
 # requires
 
 - a static version of busybox available in path
-- some standard utils : objdump, cpio, gzip 
+- some standard utils : objdump, ldd, cpio, gzip
 
 # build
 
 	./build.sh
+
+Info: you can add the TOOLS variable to add other programs (tested with mdadm, cryptsetup, and lvm)
 
 Note: use sudo to get uid=gid=0 instead of current user ids
 
@@ -30,7 +32,7 @@ Note: If you exit, you get a kernel panic as init gets killed, which is normal
 
 Experience with it, add stuff to build script....
 
-Guidelines about initramfs content :
+Guidelines about initramfs content for your next steps :
 
 https://wiki.gentoo.org/wiki/Custom_Initramfs
 
