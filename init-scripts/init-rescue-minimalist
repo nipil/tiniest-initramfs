@@ -1,4 +1,5 @@
 #!/bin/sh
 
+echo "Do not exit from this shell (or kernel panic killing init)"
 exec sh
 
