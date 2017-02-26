@@ -7,7 +7,7 @@ TARGET=contents
 
 # contents variables
 BB="busybox"
-INIT="init-rescue-basic"
+INIT="$INITSCRIPTS/init-rescue-basic"
 KVERSION="$(uname -r)"
 KMODULES=""
 TOOLS="$BB"
@@ -114,7 +114,7 @@ function prepare_target {
 function minimal_setup {
 	ln -sv /bin/$BB $TARGET/bin/sh
 	[ $? -eq 0 ] || error "creating $BB symlink failed"
-	cp $INITSCRIPTS/$1 $TARGET/init
+	cp "$1" $TARGET/init
 	[ $? -eq 0 ] || error "copying init script $1 failed"
 	chmod +x $TARGET/init
 	[ $? -eq 0 ] || error "setting executable bit on init"
