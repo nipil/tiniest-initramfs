@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# install busybox
+BB=/bin/busybox
+$BB mkdir -p /sbin /usr/sbin /usr/bin
+$BB --install
+
+# mount special filesystems
+mkdir -p /proc /sys /dev
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+
+# assembling raid arrays
+mdadm --assemble --scan
+
+# activating LVM
+lvm vgscan --mknodes
+lvm vgchange -aay
+lvm vgscan --mknodes
+
+# spawning shell
+echo "Do not exit from this shell (or kernel panic killing init)"
+exec sh
+
