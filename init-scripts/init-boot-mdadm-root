@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# CONFIG for rootfs
+ROOTFSDEV='/dev/md/home:root'
+ROOTFSTYPE='ext4'
+
+# install busybox
+BB=/bin/busybox
+$BB mkdir -p /sbin /usr/sbin /usr/bin
+$BB --install
+
+# mount special filesystems
+mkdir -p /proc /sys /dev
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+
+# waiting for external devices to power up
+DELAY=20
+for N in $(seq 1 $DELAY)
+do
+	echo "Wait $N/$DELAY secondsi for storage to come online, press ENTER to get a shell with PID 1"
+	read -t 1
+	[ $? -ne 0 ] || { echo "Spawning shell (PID 1)"; exec sh ; }
+done
+
+# manage raid
+echo "Managing RAID"
+mdadm --assemble --scan
+[ $? -eq 0 ] || { echo "Could not assemble RAID partitions" >&2 ; sh ; }
+
+echo "Pause, press enter to skip"
+read -t $DELAY
+
+# manage raid
+echo "Managing LVM begin"
+lvm vgscan --mknodes
+[ $? -eq 0 ] || { echo "Could not scan LVM volumes volume groups (1)" >&2 ; }
+lvm vgchange -aay
+[ $? -eq 0 ] || { echo "Could not activate LVM volumes" >&2 ; }
+lvm vgscan --mknodes
+[ $? -eq 0 ] || { echo "Could not scan LVM volumes volume groups (2)" >&2 ; }
+echo "Managing LVM end"
+
+echo "Pause, press enter to skip"
+read -t $DELAY
+
+# manage rootfs
+echo "Mounting root fs"
+ROOTFSMOUNT='/rootfs'
+mkdir -p "$ROOTFSMOUNT"
+echo "mkdir => $?"
+mount -t "$ROOTFSTYPE" "$ROOTFSDEV" "$ROOTFSMOUNT"
+[ $? -eq 0 ] || { echo "Could not mount root partition" >&2 ; sh ; }
+
+echo "Pause, press enter to skip"
+read -t $DELAY
+
+# preparing to boot
+echo "Moving special filesystems to target rootfs"
+for DIR in dev sys proc
+do
+	mount --move /$DIR "$ROOTFSMOUNT/$DIR"
+	[ $? -eq 0 ] || { echo "Could not mount-move $DIR partition to rootfs mount" >&2 ; sh ; }
+done
+
+echo "Pause, press enter to skip"
+read -t $DELAY
+
+# continuing boot
+exec switch_root "$ROOTFSMOUNT" /sbin/init
+
+# spawning recovery shell
+echo "Do not exit from this shell (or kernel panic killing init)"
+while true
+do
+	sh
+done
+
+echo "End of init script, incoming kernel panic if you exit that shell"
+exec sh
+
